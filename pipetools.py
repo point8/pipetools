@@ -52,7 +52,7 @@ def cli():
 def backup(outdir, token):
     print(f'Saving backup data to {outdir}')
     mkdir(outdir)
-    topics = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files']
+    topics = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files', 'activities', 'notes']
     if 'files' in topics:
         mkdir(os.path.join(outdir, 'files'))
 

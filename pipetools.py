@@ -55,7 +55,7 @@ def cli():
 def backup(outdir, token):
     print(f'Saving backup data to {outdir}')
     mkdir(outdir)
-    topics = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files', 'activities', 'notes']
+    topics = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files', 'activities']
     if 'files' in topics:
         mkdir(os.path.join(outdir, 'files'))
 

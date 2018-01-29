@@ -31,7 +31,7 @@ def get(base_url, token, outdir, path='users', limit=100):
     collected_ids = list(set(collected_ids))
 
     data = []
-    for _id in tqdm.tqdm(collected_ids, ncols=120, unit='entries', desc=f'Load data for path: /{path}'):
+    for _id in tqdm.tqdm(collected_ids, ncols=120, unit='entry', desc=f'Load data for path: /{path}'):
         r = requests.get(f'{base_url}/{path}/{_id}?api_token={token}').json()
         data.append(r['data'])
 
@@ -59,7 +59,7 @@ def backup(outdir, token):
     if 'files' in topics:
         mkdir(os.path.join(outdir, 'files'))
 
-    for topic in tqdm.tqdm(topics, ncols=120, unit='topics', desc='Request data for topics', leave=False):
+    for topic in tqdm.tqdm(topics, ncols=120, unit='topic', desc='Request data for topics', leave=False):
         get(BASE_URL, token, outdir, path=topic, limit=250)
 
 def main():

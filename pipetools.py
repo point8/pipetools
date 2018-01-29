@@ -21,7 +21,10 @@ def get(base_url, token, outdir, path='users', limit=100):
     start = 0
     while more_items_present:
         r = requests.get(f'{base_url}/{path}?api_token={token}&start={start}&limit={limit}').json()
-        more_items_present = r['additional_data']['pagination']['more_items_in_collection']
+        try:
+            more_items_present = r['additional_data']['pagination']['more_items_in_collection']
+        except:
+            more_items_present = False
         collected_ids = collected_ids + [entry['id'] for entry in r['data']]
         start += limit
 

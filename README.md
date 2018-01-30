@@ -27,3 +27,9 @@ Options:
   --token TEXT  Pipedrive CRM API token
   --help        Show this message and exit.
 ```
+
+#### Example
+
+```
+pipetools backup --token=123456790
+```

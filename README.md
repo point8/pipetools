@@ -24,8 +24,11 @@ Usage: pipetools backup [OPTIONS] [OUTDIR]
   Run Pipedrive CRM data backup
 
 Options:
-  --token TEXT  Pipedrive CRM API token
-  --help        Show this message and exit.
+  --token TEXT                    Pipedrive CRM API token
+  --topic [users|deals|persons|organizations|pipelines|stages|files|activities]
+                                  Select topic
+  --stdout                        Output to stdout instead of file
+  --help                          Show this message and exit.
 ```
 
 #### Example

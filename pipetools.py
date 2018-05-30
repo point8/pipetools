@@ -6,14 +6,14 @@ import requests
 
 
 BASE_URL = 'https://api.pipedrive.com/v1'
-
+TOPICS = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files', 'activities']
 
 def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir, path='users', limit=100):
+def get(base_url, token, outdir, path='users', limit=100, stdout=False):
     collected_ids = []
     
     # Work with paginated data
@@ -31,7 +31,7 @@ def get(base_url, token, outdir, path='users', limit=100):
     collected_ids = list(set(collected_ids))
 
     data = []
-    for _id in tqdm.tqdm(collected_ids, ncols=120, unit='entry', desc=f'Load data for path: /{path}'):
+    for _id in tqdm.tqdm(collected_ids, ncols=120, unit='entry', desc=f'Load data for path: /{path}', disable=stdout):
         r = requests.get(f'{base_url}/{path}/{_id}?api_token={token}').json()
         data.append(r['data'])
 
@@ -40,8 +40,11 @@ def get(base_url, token, outdir, path='users', limit=100):
             with open(os.path.join(os.path.join(outdir, 'files'), r['data']['name']), 'wb') as out_file:
                 out_file.write(f.content)
 
-    with open(os.path.join(outdir, f'{path}.json'), 'w') as out_file:
-        json.dump(data, out_file, indent=4, sort_keys=True)
+    if stdout:
+        print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))
+    else:
+        with open(os.path.join(outdir, f'{path}.json'), 'w') as out_file:
+            json.dump(data, out_file, indent=4, sort_keys=True)
 
 
 @click.group(help='Command line tools for Pipedrive CRM')
@@ -52,15 +55,23 @@ def cli():
 @cli.command('backup', help='Run Pipedrive CRM data backup')
 @click.argument('outdir', default='.')
 @click.option('--token', help='Pipedrive CRM API token', prompt=True)
-def backup(outdir, token):
-    print(f'Saving backup data to {outdir}')
+@click.option('--topic', help='Select topic', type=click.Choice(TOPICS))
+@click.option('--stdout', help='Output to stdout instead of file', is_flag=True)
+def backup(outdir, token, topic, stdout):
+    if not stdout:
+        print(f'Saving backup data to {outdir}')
     mkdir(outdir)
-    topics = ['users', 'deals', 'persons', 'organizations', 'pipelines', 'stages', 'files', 'activities']
+
+    if topic is not None:
+        topics = [topic]
+    else:
+        topcis = TOPICS
+
     if 'files' in topics:
         mkdir(os.path.join(outdir, 'files'))
 
-    for topic in tqdm.tqdm(topics, ncols=120, unit='topic', desc='Request data for topics', leave=False):
-        get(BASE_URL, token, outdir, path=topic, limit=250)
+    for topic in tqdm.tqdm(topics, ncols=120, unit='topic', desc='Request data for topics', leave=False, disable=stdout):
+        get(BASE_URL, token, outdir, path=topic, limit=250, stdout=stdout)
 
 def main():
     cli()

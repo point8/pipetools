@@ -90,7 +90,7 @@ def backup(outdir, token, topic, stdout):
     if topic is not None:
         topics = [topic]
     else:
-        topcis = TOPICS
+        topics = TOPICS
 
     if "files" in topics:
         mkdir(os.path.join(outdir, "files"))

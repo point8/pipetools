@@ -9,7 +9,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3 :: Only",
     ],
-    version="1",
+    version="2",
     packages=['pipetools'],
     entry_points={"console_scripts": ["pipetools = pipetools:main"]},
     install_requires=["tqdm", "pendulum"],

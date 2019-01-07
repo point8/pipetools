@@ -1,7 +1,9 @@
 import os
 import json
 import tqdm
+import time
 import click
+import random
 import requests
 
 from requests.exceptions import ConnectionError
@@ -68,6 +70,7 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
                     out_file.write(f.content)
             except ConnectionError as err:
                 print('ERROR:', err)
+            time.sleep(random.random() / 10)  # Random throttling of file download
 
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))

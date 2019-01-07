@@ -58,6 +58,7 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
         r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}").json()
         data.append(r["data"])
 
+        n_connection_errors = 0
         if path == "files":
             try:
                 f = requests.get(
@@ -70,7 +71,9 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
                     out_file.write(f.content)
             except ConnectionError as err:
                 print('ERROR:', err)
+                n_connection_errors += 1
             time.sleep(random.random() / 10)  # Random throttling of file download
+        tqdm.write(f"Catched {n_connection_errors} connection errors")
 
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))

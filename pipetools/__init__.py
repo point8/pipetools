@@ -48,6 +48,7 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
     collected_ids = list(set(collected_ids))
 
     data = []
+    n_connection_errors = 0
     for _id in tqdm.tqdm(
         collected_ids,
         ncols=120,
@@ -58,7 +59,6 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
         r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}").json()
         data.append(r["data"])
 
-        n_connection_errors = 0
         if path == "files":
             try:
                 f = requests.get(

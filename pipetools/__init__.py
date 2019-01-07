@@ -70,7 +70,7 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
                 ) as out_file:
                     out_file.write(f.content)
             except ConnectionError as err:
-                print('ERROR:', err)
+                # print('ERROR:', err)
                 n_connection_errors += 1
             time.sleep(random.random() / 10)  # Random throttling of file download
         tqdm.write(f"Catched {n_connection_errors} connection errors")

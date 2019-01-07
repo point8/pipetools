@@ -73,7 +73,7 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
                 # print('ERROR:', err)
                 n_connection_errors += 1
             time.sleep(random.random() / 10)  # Random throttling of file download
-        tqdm.write(f"Catched {n_connection_errors} connection errors")
+        tqdm.tqdm.write(f"Catched {n_connection_errors} connection errors")
 
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))

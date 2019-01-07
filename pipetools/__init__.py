@@ -4,6 +4,7 @@ import tqdm
 import click
 import requests
 
+from requests.exceptions import ConnectionError
 
 BASE_URL = "https://api.pipedrive.com/v1"
 TOPICS = [
@@ -56,14 +57,17 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
         data.append(r["data"])
 
         if path == "files":
-            f = requests.get(
-                f"{base_url}/files/{_id}/download?api_token={token}"
-            )
-            with open(
-                os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
-                "wb",
-            ) as out_file:
-                out_file.write(f.content)
+            try:
+                f = requests.get(
+                    f"{base_url}/files/{_id}/download?api_token={token}"
+                )
+                with open(
+                    os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
+                    "wb",
+                ) as out_file:
+                    out_file.write(f.content)
+            except ConnectionError as err:
+                print('ERROR:', err)
 
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))

@@ -49,7 +49,12 @@ Options:
 
 #### Example
 
+Start full backup for all topics: "users", "deals", "persons", "organizations", "pipelines", "stages", "files" and "activities":
 ```
-pipetools backup --token=123456790
-pipetools deal 315 --token 1234567890
+$ pipetools backup --token=123456790
+```
+
+Get JSON file (deals.json) with all deal data in "." for deal with id 42: 
+```
+$ pipetools deal 42 --token 1234567890
 ```

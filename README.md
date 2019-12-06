@@ -1,6 +1,6 @@
 # 🛴 Command line tools for Pipedrive CRM
 
-## CLI
+## Command-line Interface
 
 ```
 $ pipetools --help
@@ -13,6 +13,7 @@ Options:
 
 Commands:
   backup  Run Pipedrive CRM data backup
+  deal    Fetch deal as JSON with DEALID (e.g. 42)
 ```
 
 ### Fetch backup data from Pipedrive instance
@@ -31,8 +32,29 @@ Options:
   --help                          Show this message and exit.
 ```
 
-#### Example
+### Fetch single deal from Pipedrive instance
 
 ```
-pipetools backup --token=123456790
+$ pipetools deal --help
+Usage: pipetools deal [OPTIONS] DEALID
+
+  Fetch deal as JSON with DEALID (e.g. 42)
+
+Options:
+  --outdir TEXT  Set directory to save JSON file
+  --token TEXT   Pipedrive CRE API token
+  --stdout       Output to stdout instead of file
+  --help         Show this message and exit.
+```
+
+#### Example
+
+Start full backup for all topics: "users", "deals", "persons", "organizations", "pipelines", "stages", "files" and "activities":
+```
+$ pipetools backup --token=123456790
+```
+
+Get JSON file (deals.json) with all deal data in "." for deal with id 42: 
+```
+$ pipetools deal 42 --token 1234567890
 ```

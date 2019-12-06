@@ -35,7 +35,7 @@ Options:
 ### Fetch single deal from Pipedrive instance
 
 ```
-$ pipetools backup --help
+$ pipetools deal --help
 Usage: pipetools deal [OPTIONS] DEALID
 
   Fetch deal as JSON with DEALID (e.g. 42)

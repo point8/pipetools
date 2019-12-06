@@ -124,10 +124,10 @@ def backup(outdir, token, topic, stdout):
 
 
 
-@cli.command("deal",      help="Fetch specific deal as JSON")
-@click.argument("outdir", default=".")
+@cli.command("deal",      help="Fetch deal as JSON with DEALID (e.g. 42)")
+@click.argument("dealid")
+@click.option("--outdir", help="Set directory to save JSON file", default=".")
 @click.option("--token",  help="Pipedrive CRE API token", prompt=True)
-@click.option("--dealid", help="Select deal with id (e.g. 64)", prompt=True)
 @click.option("--stdout", help="Output to stdout instead of file", is_flag=True)
 def deal(outdir, token, dealid, stdout):
     if not stdout:

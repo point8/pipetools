@@ -26,11 +26,16 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir, path="users", limit=100, stdout=False):
+def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[]):
     collected_ids = []
-
+   
+    if len(ids)==0:
+        more_items_present = True 
+    else:
+        more_items_present = False
+        collected_ids = ids
+   
     # Work with paginated data
-    more_items_present = True
     start = 0
     while more_items_present:
         r = requests.get(
@@ -118,5 +123,18 @@ def backup(outdir, token, topic, stdout):
         get(BASE_URL, token, outdir, path=topic, limit=250, stdout=stdout)
 
 
+
+@cli.command("deal",      help="Fetch deal as JSON with DEALID (e.g. 42)")
+@click.argument("dealid")
+@click.option("--outdir", help="Set directory to save JSON file", default=".")
+@click.option("--token",  help="Pipedrive CRE API token", prompt=True)
+@click.option("--stdout", help="Output to stdout instead of file", is_flag=True)
+def deal(outdir, token, dealid, stdout):
+    if not stdout:
+        print(f"Saving JSON deal data to {outdir}")
+    mkdir(outdir)
+    data = get(BASE_URL, token, path="deals", limit=1, stdout=stdout, ids=[dealid] if not isinstance(dealid, list) else dealid)
+
 def main():
     cli()
+

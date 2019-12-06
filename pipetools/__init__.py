@@ -26,11 +26,16 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir, path="users", limit=100, stdout=False):
+def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[], suppress_w2hdd=False):
     collected_ids = []
-
+   
+    if len(ids)==0:
+        more_items_present = True 
+    else:
+        more_items_present = False
+        collected_ids = ids
+   
     # Work with paginated data
-    more_items_present = True
     start = 0
     while more_items_present:
         r = requests.get(
@@ -80,8 +85,23 @@ def get(base_url, token, outdir, path="users", limit=100, stdout=False):
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))
     else:
-        with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
-            json.dump(data, out_file, indent=4, sort_keys=True)
+        if suppress_w2hdd==False:
+            with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
+                json.dump(data, out_file, indent=4, sort_keys=True)
+    return data
+
+def project_proposal_informations_from_json(data):
+    d=data.pop()
+    print('\\newcommand{\\cnamelong}{'+d['org_id']['name']+'\\xspace}')
+    print('\\newcommand{\\caddress}{'+d['org_id']['address']+'}')
+    print('\\newcommand{\\ccontactname}{'+ d['person_id']['name']+'}')
+    print('\\newcommand{\\ccontactdetails}{Tel. '+d['person_id']['phone'][0]['value']+'\\\\'+d['person_id']['email'][0]['value']+'}')    
+    #for i in d['person_id']['email']
+    #    print(i['value'])
+    #for i in d['person_id']['phone']:
+    #    print(i['value'])
+
+
 
 
 @click.group(help="Command line tools for Pipedrive CRM")
@@ -118,5 +138,15 @@ def backup(outdir, token, topic, stdout):
         get(BASE_URL, token, outdir, path=topic, limit=250, stdout=stdout)
 
 
+
+@cli.command("proposal",  help="Dump information from specific deal for a proposal")
+@click.option("--token",  help="Pipedrive API token", prompt=True)
+@click.option("--deal",   help="Select deal id (e.g. 64)", prompt=True)
+def proposal(token, deal):
+    data = get(BASE_URL, token, path="deals", limit=1, stdout=False, ids=[deal] if not isinstance(deal, list) else deal, suppress_w2hdd=True)
+    project_proposal_informations_from_json(data)
+
 def main():
     cli()
+
+

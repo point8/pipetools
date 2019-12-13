@@ -160,8 +160,11 @@ def stats(token, stdout, outdir):
                 "count": period["totals"]["count"],
                 "value": period["totals"]["values"]
             })
-    print(monthly_stats)
-    return monthly_stats
+    if stdout:
+        print(json.dumps(monthly_stats, indent=4, sort_keys=True, ensure_ascii=False))
+    else:
+        with open(os.path.join(outdir, f"stats.json"), "w") as out_file:
+            json.dump(monthly_stats, out_file, indent=4, sort_keys=True)
 
 def main():
     cli()

@@ -26,7 +26,7 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[]):
+def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[], params=[]):
     collected_ids = []
    
     if len(ids)==0:
@@ -35,11 +35,16 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
         more_items_present = False
         collected_ids = ids
    
+    if params:
+        params = "&" + "&".join(params)
+    else:
+        params = ""
+
     # Work with paginated data
     start = 0
     while more_items_present:
         r = requests.get(
-            f"{base_url}/{path}?api_token={token}&start={start}&limit={limit}"
+            f"{base_url}/{path}?api_token={token}{params}&start={start}&limit={limit}"
         ).json()
         try:
             more_items_present = r["additional_data"]["pagination"][
@@ -61,13 +66,13 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
         desc=f"Load data for path: /{path}",
         disable=stdout,
     ):
-        r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}").json()
+        r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}{params}").json()
         data.append(r["data"])
 
         if path == "files":
             try:
                 f = requests.get(
-                    f"{base_url}/files/{_id}/download?api_token={token}"
+                    f"{base_url}/files/{_id}/download?api_token={token}{params}"
                 )
                 with open(
                     os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
@@ -134,6 +139,22 @@ def deal(outdir, token, dealid, stdout):
         print(f"Saving JSON deal data to {outdir}")
     mkdir(outdir)
     data = get(BASE_URL, token, path="deals", limit=1, stdout=stdout, ids=[dealid] if not isinstance(dealid, list) else dealid)
+
+@cli.command("stats", help="Fetch sales statistics")
+@click.option("--token",  help="Pipedrive CRE API token", prompt=True)
+@click.option("--stdout", help="Output to stdout instead of file", is_flag=True)
+@click.option("--outdir", help="Set directory to save JSON file", default=".")
+def stats(token, stdout, outdir):
+    if not stdout:
+        print(f"Saving JSON deal data to {outdir}")
+    mkdir(outdir)
+
+    r = requests.get(
+        f"{BASE_URL}/deals/timeline?start_date=2019-01-01&interval=month&amount=12&field_key=won_time&pipeline_id=2&filter_id=2&api_token={token}"
+    ).json()
+    for period in r["data"]:
+        print(period["period_start"], period["period_end"], period["totals"]["count"], period["totals"]["values"])
+
 
 def main():
     cli()

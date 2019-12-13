@@ -152,9 +152,16 @@ def stats(token, stdout, outdir):
     r = requests.get(
         f"{BASE_URL}/deals/timeline?start_date=2019-01-01&interval=month&amount=12&field_key=won_time&pipeline_id=2&filter_id=2&api_token={token}"
     ).json()
+    monthly_stats = []
     for period in r["data"]:
-        print(period["period_start"], period["period_end"], period["totals"]["count"], period["totals"]["values"])
-
+        monthly_stats.append({
+                "start": period["period_start"],
+                "end": period["period_end"],
+                "count": period["totals"]["count"],
+                "value": period["totals"]["values"]
+            })
+    print(monthly_stats)
+    return monthly_stats
 
 def main():
     cli()

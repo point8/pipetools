@@ -140,7 +140,7 @@ def deal(outdir, token, dealid, stdout):
     mkdir(outdir)
     data = get(BASE_URL, token, path="deals", limit=1, stdout=stdout, ids=[dealid] if not isinstance(dealid, list) else dealid)
 
-@cli.command("stats", help="Fetch sales statistics")
+@cli.command("stats", help="Fetch sales statistics (WIP)")
 @click.option("--token",  help="Pipedrive CRE API token", prompt=True)
 @click.option("--stdout", help="Output to stdout instead of file", is_flag=True)
 @click.option("--outdir", help="Set directory to save JSON file", default=".")

@@ -105,6 +105,14 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdou
     return data
 
 
+def post(base_url, token, path="", params={}, data={}):
+    payload_params = params.copy()
+    payload_params['api_token'] = token
+    r = requests.post(f"{base_url}/{path}",
+                      params=payload_params, data=data).json()
+    return r["data"]
+
+
 @click.group(help="Command line tools for Pipedrive CRM")
 def cli():
     pass

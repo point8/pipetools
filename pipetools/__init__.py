@@ -26,7 +26,7 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[], params=[]):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdout=False, ids=[], params=[]):
     collected_ids = []
 
     if len(ids)==0:
@@ -39,6 +39,9 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
         params = "&" + "&".join(params)
     else:
         params = ""
+
+    if sub_path != "":
+        sub_path = "/" + sub_path
 
     # Work with paginated data
     start = 0
@@ -66,7 +69,7 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
         desc=f"Load data for path: /{path}",
         disable=stdout,
     ):
-        r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}{params}").json()
+        r = requests.get(f"{base_url}/{path}/{_id}{sub_path}?api_token={token}{params}").json()
         data.append(r["data"])
 
         if path == "files":

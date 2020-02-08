@@ -26,7 +26,7 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[]):
+def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[], additional_parameters=''):
     collected_ids = []
    
     if len(ids)==0:
@@ -39,7 +39,8 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
     start = 0
     while more_items_present:
         r = requests.get(
-            f"{base_url}/{path}?api_token={token}&start={start}&limit={limit}"
+            f"{base_url}/{path}?api_token={token}&start={start}"
+            f"&limit={limit}&{additional_parameters}"
         ).json()
         try:
             more_items_present = r["additional_data"]["pagination"][
@@ -87,6 +88,7 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
     else:
         with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
             json.dump(data, out_file, indent=4, sort_keys=True)
+    return data
 
 
 @click.group(help="Command line tools for Pipedrive CRM")

@@ -26,7 +26,7 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdout=False, ids=[], params={}):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdout=False, ids=[], params={}, silent=False):
     collected_ids = []
 
     if len(ids)==0:
@@ -72,7 +72,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdou
         ncols=120,
         unit="entry",
         desc=f"Load data for path: /{path}",
-        disable=stdout,
+        disable=stdout or silent,
     ):
         payload = params.copy()
         payload['api_token'] = token

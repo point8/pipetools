@@ -26,25 +26,33 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=[], params=[]):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdout=False, ids=[], params={}, silent=False):
     collected_ids = []
-   
+
     if len(ids)==0:
-        more_items_present = True 
+        more_items_present = True
     else:
         more_items_present = False
         collected_ids = ids
-   
-    if params:
-        params = "&" + "&".join(params)
-    else:
-        params = ""
+
+    # if params:
+    #     params = "&" + "&".join(params)
+    # else:
+    #     params = ""
+
+    if sub_path != "":
+        sub_path = "/" + sub_path
+
 
     # Work with paginated data
     start = 0
     while more_items_present:
+        payload = params.copy()
+        payload['api_token'] = token
+        payload['start'] = start
+        payload['limit'] = limit
         r = requests.get(
-            f"{base_url}/{path}?api_token={token}{params}&start={start}&limit={limit}"
+            f"{base_url}/{path}", params=payload
         ).json()
         try:
             more_items_present = r["additional_data"]["pagination"][
@@ -64,9 +72,11 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
         ncols=120,
         unit="entry",
         desc=f"Load data for path: /{path}",
-        disable=stdout,
+        disable=stdout or silent,
     ):
-        r = requests.get(f"{base_url}/{path}/{_id}?api_token={token}{params}").json()
+        payload = params.copy()
+        payload['api_token'] = token
+        r = requests.get(f"{base_url}/{path}/{_id}{sub_path}", params=payload).json()
         data.append(r["data"])
 
         if path == "files":
@@ -92,6 +102,23 @@ def get(base_url, token, outdir=".", path="users", limit=100, stdout=False, ids=
     else:
         with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
             json.dump(data, out_file, indent=4, sort_keys=True)
+    return data
+
+
+def post(base_url, token, path="", params={}, data={}):
+    payload_params = params.copy()
+    payload_params['api_token'] = token
+    r = requests.post(f"{base_url}/{path}",
+                      params=payload_params, data=data).json()
+    return r["data"]
+
+
+def put(base_url, token, path="", params={}, data={}):
+    payload_params = params.copy()
+    payload_params['api_token'] = token
+    r = requests.put(f"{base_url}/{path}",
+                      params=payload_params, data=data).json()
+    return r["data"]
 
 
 @click.group(help="Command line tools for Pipedrive CRM")

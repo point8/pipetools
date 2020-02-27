@@ -26,7 +26,8 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdout=False, ids=[], params={}, silent=False):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
+        stdout=False, ids=[], params={}, silent=False, no_output=False):
     collected_ids = []
 
     if len(ids)==0:
@@ -100,8 +101,9 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100, stdou
     if stdout:
         print(json.dumps(data, indent=4, sort_keys=True, ensure_ascii=False))
     else:
-        with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
-            json.dump(data, out_file, indent=4, sort_keys=True)
+        if not no_output:
+            with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
+                json.dump(data, out_file, indent=4, sort_keys=True)
     return data
 
 

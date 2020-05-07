@@ -26,14 +26,22 @@ def mkdir(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
-        stdout=False, ids=[], params={}, silent=False, no_output=False):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
+        stdout=False, ids=[], params={}, silent=False, no_output=False,
+        detailed_query=True):
     collected_ids = []
+    collected_query_payload = []
 
-    if len(ids)==0:
+    if len(ids) == 0:
         more_items_present = True
     else:
+        # This is quite a hack and could need some refactoring (which I
+        # will not do to keep backwards-compatibility)
+        # If a manual id list is supplied, we will skip the initial request
+        # (more_items_present = False will skip the while loop) and force
+        # individual requests (detailed_query = True)
         more_items_present = False
+        detailed_query = True
         collected_ids = ids
 
     # if params:
@@ -43,7 +51,6 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
 
     if sub_path != "":
         sub_path = "/" + sub_path
-
 
     # Work with paginated data
     start = 0
@@ -62,38 +69,61 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
         except:
             more_items_present = False
         collected_ids = collected_ids + [entry["id"] for entry in r["data"]]
+        collected_query_payload = collected_query_payload + \
+            [entry for entry in r["data"]]
         start += limit
 
     collected_ids = list(set(collected_ids))
 
     data = []
-    n_connection_errors = 0
-    for _id in tqdm.tqdm(
-        collected_ids,
-        ncols=120,
-        unit="entry",
-        desc=f"Load data for path: /{path}",
-        disable=stdout or silent,
-    ):
-        payload = params.copy()
-        payload['api_token'] = token
-        r = requests.get(f"{base_url}/{path}/{_id}{sub_path}", params=payload).json()
-        data.append(r["data"])
 
-        if path == "files":
-            try:
-                f = requests.get(
-                    f"{base_url}/files/{_id}/download?api_token={token}{params}"
-                )
-                with open(
-                    os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
-                    "wb",
-                ) as out_file:
-                    out_file.write(f.content)
-            except ConnectionError as err:
-                # print('ERROR:', err)
-                n_connection_errors += 1
-            time.sleep(random.random() / 10)  # Random throttling of file download
+    if not detailed_query:
+        data = collected_query_payload
+    else:
+        n_connection_errors = 0
+        for _id in tqdm.tqdm(
+            collected_ids,
+            ncols=120,
+            unit="entry",
+            desc=f"Load data for path: /{path}",
+            disable=stdout or silent,
+        ):
+            payload = params.copy()
+            payload['api_token'] = token
+            # t_start = time.time()
+            success = False
+            while not success:
+                r = requests.get(f"{base_url}/{path}/{_id}{sub_path}",
+                                 params=payload)
+                # When hitting the rate limiting, wait a bit
+                if int(r.headers['X-RateLimit-Remaining']) < 10:
+                    # print('Must throttle!')
+                    time.sleep(random.random())
+                r = r.json()
+                if r["success"] is False and r["errorCode"] == 429:
+                    # print('Hit rate limit! Will retry!')
+                    time.sleep(random.random() * 10)
+                else:
+                    success = True
+            # print(f'Time for request: {time.time() - t_start:.2f}')
+            if 'data' not in r:
+                print(r)
+            data.append(r["data"])
+
+            if path == "files":
+                try:
+                    f = requests.get(
+                        f"{base_url}/files/{_id}/download?api_token={token}{params}"
+                    )
+                    with open(
+                        os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
+                        "wb",
+                    ) as out_file:
+                        out_file.write(f.content)
+                except ConnectionError as err:
+                    # print('ERROR:', err)
+                    n_connection_errors += 1
+                time.sleep(random.random() / 10)  # Random throttling of file download
 
     if path == "files":
         tqdm.tqdm.write(f"Catched {n_connection_errors} connection errors")

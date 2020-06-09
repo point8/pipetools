@@ -96,6 +96,8 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
                 r = requests.get(f"{base_url}/{path}/{_id}{sub_path}",
                                  params=payload)
                 # When hitting the rate limiting, wait a bit
+                #if 'X-RateLimit-Remaining' not in r.headers:
+                #    print(r.headers)
                 if int(r.headers['X-RateLimit-Remaining']) < 10:
                     # print('Must throttle!')
                     time.sleep(random.random())

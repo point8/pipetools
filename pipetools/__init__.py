@@ -98,7 +98,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
                 # When hitting the rate limiting, wait a bit
                 #if 'X-RateLimit-Remaining' not in r.headers:
                 #    print(r.headers)
-                if int(r.headers['X-RateLimit-Remaining']) < 10:
+                if int(r.headers['X-RateLimit-Remaining']) < 15:
                     # print('Must throttle!')
                     time.sleep(random.random())
                 r = r.json()

@@ -5,6 +5,7 @@ import time
 import click
 import random
 import requests
+import threading
 
 from requests.exceptions import ConnectionError
 
@@ -20,6 +21,8 @@ TOPICS = [
     "activities",
 ]
 
+limiter = threading.BoundedSemaphore(10)
+
 
 def mkdir(path):
     if not os.path.exists(path):
@@ -29,8 +32,11 @@ def mkdir(path):
 def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
         stdout=False, ids=[], params={}, silent=False, no_output=False,
         detailed_query=True):
+    limiter.acquire()
     collected_ids = []
     collected_query_payload = []
+
+    # print('wanna get something')
 
     if len(ids) == 0:
         more_items_present = True
@@ -80,6 +86,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
     if not detailed_query:
         data = collected_query_payload
     else:
+        # print(f'wanna get all dem ids {collected_ids}')
         n_connection_errors = 0
         for _id in tqdm.tqdm(
             collected_ids,
@@ -98,13 +105,21 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
                 # When hitting the rate limiting, wait a bit
                 #if 'X-RateLimit-Remaining' not in r.headers:
                 #    print(r.headers)
-                if int(r.headers['X-RateLimit-Remaining']) < 15:
-                    # print('Must throttle!')
-                    time.sleep(random.random())
+                # if random.random() > 0.5:
+                #     print(f'Rate limiting: {r.headers["X-RateLimit-Remaining"]}')
+                rate_limit_remaining = int(r.headers['X-RateLimit-Remaining'])
+                if rate_limit_remaining < 40:
+                    # time.sleep(10)
+                    time_wait = ((40.0 - rate_limit_remaining) ** 1.5) / 40.0
+                    # print(f'Must throttle for {time_wait} s! Rate limiting: '
+                    #       f'{r.headers["X-RateLimit-Remaining"]}')
+                    time.sleep(time_wait)
                 r = r.json()
                 if r["success"] is False and r["errorCode"] == 429:
-                    # print('Hit rate limit! Will retry!')
-                    time.sleep(random.random() * 10)
+                    print('Hit rate limit! Will retry!')
+                    # time.sleep(10)
+                    time.sleep(10)
+                    # time.sleep(random.random() * 10)
                 else:
                     success = True
             # print(f'Time for request: {time.time() - t_start:.2f}')
@@ -136,6 +151,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
         if not no_output:
             with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
                 json.dump(data, out_file, indent=4, sort_keys=True)
+    limiter.release()
     return data
 
 

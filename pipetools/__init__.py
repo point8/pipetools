@@ -65,6 +65,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
         payload['api_token'] = token
         payload['start'] = start
         payload['limit'] = limit
+        #print('pipetools: get!')
         r = requests.get(
             f"{base_url}/{path}", params=payload
         ).json()
@@ -100,28 +101,33 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
             # t_start = time.time()
             success = False
             while not success:
-                r = requests.get(f"{base_url}/{path}/{_id}{sub_path}",
-                                 params=payload)
-                # When hitting the rate limiting, wait a bit
-                #if 'X-RateLimit-Remaining' not in r.headers:
-                #    print(r.headers)
-                # if random.random() > 0.5:
-                #     print(f'Rate limiting: {r.headers["X-RateLimit-Remaining"]}')
-                rate_limit_remaining = int(r.headers['X-RateLimit-Remaining'])
-                if rate_limit_remaining < 40:
-                    # time.sleep(10)
-                    time_wait = ((40.0 - rate_limit_remaining) ** 1.5) / 40.0
-                    # print(f'Must throttle for {time_wait} s! Rate limiting: '
-                    #       f'{r.headers["X-RateLimit-Remaining"]}')
-                    time.sleep(time_wait)
-                r = r.json()
-                if r["success"] is False and r["errorCode"] == 429:
-                    print('Hit rate limit! Will retry!')
-                    # time.sleep(10)
+                try:
+                    #print('pipetools: get!')
+                    r = requests.get(f"{base_url}/{path}/{_id}{sub_path}",
+                                     params=payload)
+                    # When hitting the rate limiting, wait a bit
+                    #if 'X-RateLimit-Remaining' not in r.headers:
+                    #    print(r.headers)
+                    # if random.random() > 0.5:
+                    #     print(f'Rate limiting: {r.headers["X-RateLimit-Remaining"]}')
+                    rate_limit_remaining = int(r.headers['X-RateLimit-Remaining'])
+                    if rate_limit_remaining < 8:
+                        # time.sleep(10)
+                        time_wait = ((40.0 - rate_limit_remaining) ** 1.2) / 40.0
+                        # print(f'Must throttle for {time_wait} s! Rate limiting: '
+                        #       f'{r.headers["X-RateLimit-Remaining"]}')
+                        time.sleep(time_wait)
+                    r = r.json()
+                    if r["success"] is False and r["errorCode"] == 429:
+                        print('Hit rate limit! Will retry!')
+                        # time.sleep(10)
+                        time.sleep(10)
+                        # time.sleep(random.random() * 10)
+                    else:
+                        success = True
+                except requests.exceptions.ConnectionError as error:
+                    print(f'Caught requests.exceptions.ConnectionError! Will timeout for a bit… [{error}]')
                     time.sleep(10)
-                    # time.sleep(random.random() * 10)
-                else:
-                    success = True
             # print(f'Time for request: {time.time() - t_start:.2f}')
             if 'data' not in r:
                 print(r)
@@ -129,6 +135,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
 
             if path == "files":
                 try:
+                    #print('pipetools: get!')
                     f = requests.get(
                         f"{base_url}/files/{_id}/download?api_token={token}{params}"
                     )

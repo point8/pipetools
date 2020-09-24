@@ -17,8 +17,8 @@ TOPICS = [
     "organizations",
     "pipelines",
     "stages",
-    "files",
     "activities",
+    "files",
 ]
 
 limiter = threading.BoundedSemaphore(10)

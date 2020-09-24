@@ -5,6 +5,7 @@ import time
 import click
 import random
 import requests
+import threading
 
 from requests.exceptions import ConnectionError
 
@@ -20,20 +21,33 @@ TOPICS = [
     "activities",
 ]
 
+limiter = threading.BoundedSemaphore(10)
+
 
 def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
-        stdout=False, ids=[], params={}, silent=False, no_output=False):
+def get(base_url, token, outdir=".", path="users", sub_path="", limit=5000,
+        stdout=False, ids=[], params={}, silent=False, no_output=False,
+        detailed_query=True):
+    limiter.acquire()
     collected_ids = []
+    collected_query_payload = []
 
-    if len(ids)==0:
+    # print('wanna get something')
+
+    if len(ids) == 0:
         more_items_present = True
     else:
+        # This is quite a hack and could need some refactoring (which I
+        # will not do to keep backwards-compatibility)
+        # If a manual id list is supplied, we will skip the initial request
+        # (more_items_present = False will skip the while loop) and force
+        # individual requests (detailed_query = True)
         more_items_present = False
+        detailed_query = True
         collected_ids = ids
 
     # if params:
@@ -44,7 +58,6 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
     if sub_path != "":
         sub_path = "/" + sub_path
 
-
     # Work with paginated data
     start = 0
     while more_items_present:
@@ -52,6 +65,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
         payload['api_token'] = token
         payload['start'] = start
         payload['limit'] = limit
+        #print('pipetools: get!')
         r = requests.get(
             f"{base_url}/{path}", params=payload
         ).json()
@@ -62,38 +76,78 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
         except:
             more_items_present = False
         collected_ids = collected_ids + [entry["id"] for entry in r["data"]]
+        collected_query_payload = collected_query_payload + \
+            [entry for entry in r["data"]]
         start += limit
 
     collected_ids = list(set(collected_ids))
 
     data = []
-    n_connection_errors = 0
-    for _id in tqdm.tqdm(
-        collected_ids,
-        ncols=120,
-        unit="entry",
-        desc=f"Load data for path: /{path}",
-        disable=stdout or silent,
-    ):
-        payload = params.copy()
-        payload['api_token'] = token
-        r = requests.get(f"{base_url}/{path}/{_id}{sub_path}", params=payload).json()
-        data.append(r["data"])
 
-        if path == "files":
-            try:
-                f = requests.get(
-                    f"{base_url}/files/{_id}/download?api_token={token}{params}"
-                )
-                with open(
-                    os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
-                    "wb",
-                ) as out_file:
-                    out_file.write(f.content)
-            except ConnectionError as err:
-                # print('ERROR:', err)
-                n_connection_errors += 1
-            time.sleep(random.random() / 10)  # Random throttling of file download
+    if not detailed_query:
+        data = collected_query_payload
+    else:
+        # print(f'wanna get all dem ids {collected_ids}')
+        n_connection_errors = 0
+        for _id in tqdm.tqdm(
+            collected_ids,
+            ncols=120,
+            unit="entry",
+            desc=f"Load data for path: /{path}",
+            disable=stdout or silent,
+        ):
+            payload = params.copy()
+            payload['api_token'] = token
+            # t_start = time.time()
+            success = False
+            while not success:
+                try:
+                    #print('pipetools: get!')
+                    r = requests.get(f"{base_url}/{path}/{_id}{sub_path}",
+                                     params=payload)
+                    # When hitting the rate limiting, wait a bit
+                    #if 'X-RateLimit-Remaining' not in r.headers:
+                    #    print(r.headers)
+                    # if random.random() > 0.5:
+                    #     print(f'Rate limiting: {r.headers["X-RateLimit-Remaining"]}')
+                    rate_limit_remaining = int(r.headers['X-RateLimit-Remaining'])
+                    if rate_limit_remaining < 8:
+                        # time.sleep(10)
+                        time_wait = ((40.0 - rate_limit_remaining) ** 1.2) / 40.0
+                        # print(f'Must throttle for {time_wait} s! Rate limiting: '
+                        #       f'{r.headers["X-RateLimit-Remaining"]}')
+                        time.sleep(time_wait)
+                    r = r.json()
+                    if r["success"] is False and r["errorCode"] == 429:
+                        print('Hit rate limit! Will retry!')
+                        # time.sleep(10)
+                        time.sleep(10)
+                        # time.sleep(random.random() * 10)
+                    else:
+                        success = True
+                except requests.exceptions.ConnectionError as error:
+                    print(f'Caught requests.exceptions.ConnectionError! Will timeout for a bit… [{error}]')
+                    time.sleep(10)
+            # print(f'Time for request: {time.time() - t_start:.2f}')
+            if 'data' not in r:
+                print(r)
+            data.append(r["data"])
+
+            if path == "files":
+                try:
+                    #print('pipetools: get!')
+                    f = requests.get(
+                        f"{base_url}/files/{_id}/download?api_token={token}{params}"
+                    )
+                    with open(
+                        os.path.join(os.path.join(outdir, "files"), r["data"]["name"]),
+                        "wb",
+                    ) as out_file:
+                        out_file.write(f.content)
+                except ConnectionError as err:
+                    # print('ERROR:', err)
+                    n_connection_errors += 1
+                time.sleep(random.random() / 10)  # Random throttling of file download
 
     if path == "files":
         tqdm.tqdm.write(f"Catched {n_connection_errors} connection errors")
@@ -104,6 +158,7 @@ def get(base_url, token, outdir=".", path="users", sub_path="", limit=100,
         if not no_output:
             with open(os.path.join(outdir, f"{path}.json"), "w") as out_file:
                 json.dump(data, out_file, indent=4, sort_keys=True)
+    limiter.release()
     return data
 
 
